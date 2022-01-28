@@ -9,7 +9,7 @@ pub struct Array {
 
 impl Array {
     pub fn new(data: Vec<f64>, dimensions: Vec<usize>) -> Self {
-        assert_eq!(data.len(), dimensions.iter().product());  // Remplacer par un Err()
+        assert_eq!(data.len(), dimensions.iter().product());
         Array {data, dimensions}
     }
 
@@ -66,16 +66,17 @@ impl Network {
         let mut total: usize = 0;
         for operator in self.operators.iter() {
             total += operator.count_parameters();
-        }  // Remplacer par un fold()
+        }  // DEV Note: Replace by a call to fold()
 
         total
     }
 
     pub fn execute_inference<'a>(&mut self, input: &'a Array) -> &Array {
-        self.input = input.to_owned();  // Note: à optimiser
+        self.input = input.to_owned();  // DEV Note: MUST BE OPTIMIZED
         self.operators
             .iter_mut()
-            .fold(&self.input, |acc, op| op.execute_operation(acc).unwrap())
+            .fold(&self.input, |acc, op| op.execute_operation(acc)
+            .unwrap())
     }
 }
 
@@ -123,8 +124,6 @@ impl Operator for ReLu {
         for (n, item) in input.data.iter().enumerate() {
             self.output.data[n] = item.max(0.0);
         }
-
-        //println!("Result: {:?}", self.output);  // DEBUG
         Ok(&self.output)
     }
 
@@ -159,8 +158,6 @@ impl Operator for LinearCombination {
         }
 
         self.initialize_array(self.bias.len(), self.bias.dimensions.clone());
-        //self.output.copy_array(&Array::new(vec![0.0; self.bias.len()],
-        //                                   self.bias.dimensions.clone()));
 
         let column_size = self.bias.len();
         let mut inbound = 0;
@@ -173,10 +170,8 @@ impl Operator for LinearCombination {
                 outbound = inbound + column_size;
             }
             let weights_column = &self.weights.data[inbound..outbound];
-            //println!("in: {} | out: {} | weights_col: {:?}", inbound, outbound, weights_column);
             for m in 0..column_size {
                 self.output.data[m] += weights_column[m] * item;
-                //println!("item :  {} | weight: {} | comput: {}", item, self.weights.data[m * (n + 1)], self.output.data[m]);
             }
         }
 
@@ -184,12 +179,11 @@ impl Operator for LinearCombination {
             self.output.data[n] += item;
         }
 
-        //println!("Output: {:?}", self.output);  // DEBUG
         Ok(&self.output)
     }
 
     fn count_parameters(&self) -> usize {
-        // Faut-il que je compte les paramètres de sortie de la combinaison ?
+        // DEV Note:  Do I need to add the output vector length to the count ?
         self.weights.data.len() + self.bias.len()
     }
 
@@ -216,7 +210,6 @@ impl Operator for SoftMax {
         let normalized_sum: f64 = normalized_input.iter().sum();
         // DEV Note: perform a for_each() to apply modifications instead of reallocating a new array
         self.output = Array::new(normalized_input.iter().map(|x| x / normalized_sum).collect(), vec![normalized_input.len()]);
-        //println!("Result: {:?}", self.output);  // DEBUG
         Ok(&self.output)
     }
 
@@ -289,15 +282,4 @@ mod tests {
 
         assert_eq!(*network.execute_inference(&input_array).data, vec![32., 72.]);
     }
-
-    #[test]
-    fn basic_soft_max_1_dim() {
-        let input_array = Array::new(vec![1., 2., 5., -1.], vec![4]);
-        let mut network = Network::new();
-        network.add_operator(Box::new(SoftMax::new())).unwrap();
-
-        // Pas d'assertion ici, utilisé en débug pour voir si la sortie est bien celle imaginée
-        network.execute_inference(&input_array);
-    }
-
 }

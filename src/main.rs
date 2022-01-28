@@ -31,6 +31,9 @@ fn display_ascii_art(number: &trial::Array, height: usize, width: usize) {
 }
 
 fn main() {
+    println!("{}", SEPARATOR);
+    println!("{}", SEPARATOR);
+
     println!("Dataset contains {} items", DATASET.len());
     print!("Network initialization... ");
 
@@ -52,10 +55,21 @@ fn main() {
 
     println!("Done");
     println!("Inference engine has {} parameters", network.count_parameters());
+
+
+    println!("\n\nPress Enter key to fetch next item in dataset\n\n");
+
     println!("{}", SEPARATOR);
     println!("{}", SEPARATOR);
 
-    for image in DATASET[..3].iter() {
+
+    for image in DATASET.iter() {
+        // Wait for user to hit Enter key
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line).unwrap();
+
+        println!();
+
         let image_array = trial::Array::new(image.to_vec(), IMAGE_SIZE.to_vec());
         display_ascii_art(&image_array, IMAGE_SIZE[0], IMAGE_SIZE[1]);
         let results_array = network.execute_inference(&image_array);
@@ -68,8 +82,7 @@ fn main() {
             .iter()
             .position(|n| n.eq(&max_value)).unwrap();
 
-        println!("Above image represents number '{}' (score: {})", max_index, max_value);
-        println!("results: {:?}", results_array);  // DEBUG
+        println!("Above image represents number '{}' (score: {})\n", max_index, max_value);
 
         println!("{}", SEPARATOR);
         println!("{}", SEPARATOR);
